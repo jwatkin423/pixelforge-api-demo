@@ -1,0 +1,89 @@
+# Production stack for Dokploy (Compose app, compose path ./docker-compose.yml).
+#
+# Dokploy writes the Environment tab to a .env file next to this file; every app
+# service loads it. Required there: APP_KEY, APP_URL, PIXELFORGE_API_KEY,
+# PIXELFORGE_WEBHOOK_SECRET, DB_DATABASE, DB_USERNAME, DB_PASSWORD, DB_ROOT_PASSWORD.
+#
+# Routing: add the domain in Dokploy's Domains tab on the "app" service, port 8080.
+# Dokploy then attaches that service to dokploy-network and adds the Traefik labels.
+
+x-app: &app
+    build:
+        context: .
+        target: production
+    image: pixelforge-app:latest
+    restart: unless-stopped
+    env_file: .env
+    environment: &app-environment
+        APP_ENV: production
+        APP_DEBUG: 'false'
+        LOG_CHANNEL: stderr
+        DB_CONNECTION: mysql
+        DB_HOST: mysql
+        DB_PORT: '3306'
+    depends_on:
+        mysql:
+            condition: service_healthy
+    networks:
+        - default
+
+services:
+    app:
+        <<: *app
+        environment:
+            <<: *app-environment
+            # Only the web container migrates and caches config, routes and views on boot.
+            AUTORUN_ENABLED: 'true'
+        expose:
+            - 8080
+
+    queue:
+        <<: *app
+        command:
+            [
+                'php',
+                'artisan',
+                'queue:work',
+                '--tries=1',
+                '--timeout=60',
+                '--sleep=3',
+            ]
+        stop_signal: SIGTERM
+        stop_grace_period: 90s
+        healthcheck:
+            test: ['CMD', 'healthcheck-queue']
+            start_period: 10s
+
+    scheduler:
+        <<: *app
+        command: ['php', 'artisan', 'schedule:work']
+        stop_signal: SIGTERM
+        healthcheck:
+            test: ['CMD', 'healthcheck-schedule']
+            start_period: 10s
+
+    mysql:
+        image: mysql:8.4
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE:?Set DB_DATABASE}
+            MYSQL_USER: ${DB_USERNAME:?Set DB_USERNAME}
+            MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+            MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD}
+        volumes:
+            - mysql-data:/var/lib/mysql
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    'mysqladmin ping -h 127.0.0.1 -uroot -p"$$MYSQL_ROOT_PASSWORD" --silent',
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 20
+            start_period: 20s
+        networks:
+            - default
+
+volumes:
+    mysql-data:
