@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Billing\CostCalculator;
 use App\Billing\CreditLedger;
-use App\Billing\InsufficientCreditsException;
 use App\Billing\Nanodollars;
 use App\Enums\GenerationQuality;
 use App\Enums\GenerationSize;
 use App\Enums\GenerationStatus;
+use App\Exceptions\InsufficientCreditsException;
 use App\Http\Requests\Generations\StoreGenerationRequest;
 use App\Http\Resources\GenerationResource;
 use App\Jobs\SubmitGenerationToPixelforge;
