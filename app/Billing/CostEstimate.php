@@ -3,8 +3,8 @@
 namespace App\Billing;
 
 /**
- * The range a generation can cost before it runs. Pixelforge only knows the exact text
- * and reasoning token counts after completion, so we price both ends of the range.
+ * Get the range of cost a generation before it runs. Price for min and max
+ * because Pixelforge only knows at the end of the generation
  */
 final readonly class CostEstimate
 {

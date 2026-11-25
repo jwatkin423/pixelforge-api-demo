@@ -4,11 +4,13 @@ namespace App\Billing;
 
 use App\Enums\CreditTransactionType;
 use App\Enums\GenerationStatus;
+use App\Exceptions\InsufficientCreditsException;
 use App\Models\CreditTransaction;
 use App\Models\Generation;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use LogicException;
+use Throwable;
 
 /**
  * The only place balances change. Every movement is an append-only transaction written
@@ -20,6 +22,9 @@ use LogicException;
  */
 class CreditLedger
 {
+    /**
+     * @throws Throwable
+     */
     public function purchase(User $user, int $amountNanos): CreditTransaction
     {
         if ($amountNanos <= 0) {
@@ -35,7 +40,7 @@ class CreditLedger
     }
 
     /**
-     * @throws InsufficientCreditsException
+     * @throws InsufficientCreditsException|Throwable
      */
     public function hold(Generation $generation, int $amountNanos): CreditTransaction
     {

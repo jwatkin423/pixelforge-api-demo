@@ -32,7 +32,7 @@ class CostCalculator
             $numerator += ((int) ($usage[$tokenType] ?? 0)) * $rate;
         }
 
-        return Nanodollars::ceilDiv($numerator, self::TOKENS_PER_RATE_UNIT);
+        return Nanodollars::divideRoundUp($numerator, self::TOKENS_PER_RATE_UNIT);
     }
 
     /**
@@ -40,7 +40,7 @@ class CostCalculator
      */
     public function chargeFor(int $providerCostNanos): int
     {
-        return Nanodollars::ceilDiv($providerCostNanos * (100 + $this->markupPercent), 100);
+        return Nanodollars::divideRoundUp($providerCostNanos * (100 + $this->markupPercent), 100);
     }
 
     public function estimate(
@@ -50,10 +50,16 @@ class CostCalculator
         int $referenceImageCount,
         PricingService $pricing,
     ): CostEstimate {
+
+        // estimate text tokens from the prompt length
         $baseTextTokens = (int) ceil(mb_strlen($prompt) / $pricing->charactersPerTextToken);
+        // estimate the min tokens amount
         $textTokensMin = (int) floor($baseTextTokens * (1 - $pricing->textTokenVariance));
+        // estimate the max tokens amount
         $textTokensMax = (int) ceil($baseTextTokens * (1 + $pricing->textTokenVariance));
+        // image tokens
         $imageTokens = $referenceImageCount * $pricing->tokensPerReferenceImage;
+        // output tokens
         $outputTokens = $pricing->outputTokensFor($quality, $size);
         $reasoning = $pricing->reasoningRangeFor($quality);
 
