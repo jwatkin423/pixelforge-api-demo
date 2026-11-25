@@ -1,8 +1,11 @@
 import inertia from '@inertiajs/vite';
 import { wayfinder } from '@laravel/vite-plugin-wayfinder';
+// @ts-ignore
 import tailwindcss from '@tailwindcss/vite';
+// @ts-ignore
 import vue from '@vitejs/plugin-vue';
 import laravel from 'laravel-vite-plugin';
+// @ts-ignore
 import { bunny } from 'laravel-vite-plugin/fonts';
 import { defineConfig, lazyPlugins } from 'vite-plus';
 
