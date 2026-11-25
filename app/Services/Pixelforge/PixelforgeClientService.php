@@ -10,12 +10,11 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 /**
- * Thin wrapper over the Pixelforge HTTP API. Retrying is the caller's decision, because
- * the right back-off depends on the operation (a queued job can wait, a page cannot).
+ * Class for the PixelForge API
  */
 class PixelforgeClientService
 {
-    private const PRICING_CACHE_KEY = 'pixelforge.pricing';
+    private const string PRICING_CACHE_KEY = 'pixelforge.pricing';
 
     public function __construct(
         private readonly string $baseUrl,
@@ -24,6 +23,8 @@ class PixelforgeClientService
     ) {}
 
     /**
+     * Create the generation
+     *
      * @param  array{prompt: string, size: string, quality: string, reference_images: list<string>, metadata: array<string, string>}  $parameters
      * @return array<string, mixed> The generation object.
      *
