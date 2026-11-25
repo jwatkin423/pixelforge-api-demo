@@ -5,6 +5,7 @@ namespace App\Services\Pixelforge;
 use App\Billing\Nanodollars;
 use App\Enums\GenerationQuality;
 use App\Enums\GenerationSize;
+use Arr;
 
 /**
  * Pixelforge's current rates and token-counting constants, from GET /v1/pricing.
@@ -26,17 +27,19 @@ final readonly class PricingService
     ) {}
 
     /**
+     * from the API and convert to Object
+     *
      * @param  array{rates: array<string, string>, tokens: array{characters_per_text_token: int, text_token_variance: float|int, per_reference_image: int, output: array<string, array<string, int>>, reasoning: array<string, array{min: int, max: int}>}}  $payload
      */
     public static function fromApi(array $payload): self
     {
         return new self(
             ratesNanosPerMillion: self::parseRates($payload['rates']),
-            charactersPerTextToken: (int) $payload['tokens']['characters_per_text_token'],
-            textTokenVariance: (float) $payload['tokens']['text_token_variance'],
-            tokensPerReferenceImage: (int) $payload['tokens']['per_reference_image'],
-            outputTokens: $payload['tokens']['output'],
-            reasoningTokens: $payload['tokens']['reasoning'],
+            charactersPerTextToken: (int) Arr::get($payload['tokens'], 'characters_per_text_token'),
+            textTokenVariance: (float) Arr::get($payload['tokens'], 'text_token_variance'),
+            tokensPerReferenceImage: (int) Arr::get($payload['tokens'], 'per_reference_image'),
+            outputTokens: Arr::get($payload['tokens'], 'output'),
+            reasoningTokens: Arr::get($payload['tokens'], 'reasoning'),
         );
     }
 
@@ -51,9 +54,17 @@ final readonly class PricingService
         return array_map(fn (string|int|float $rate): int => Nanodollars::fromDecimal((string) $rate), $rates);
     }
 
+    /**
+     *
+     *
+     * @param GenerationQuality $quality
+     * @param GenerationSize $size
+     * @return int
+     */
     public function outputTokensFor(GenerationQuality $quality, GenerationSize $size): int
     {
-        return (int) $this->outputTokens[$quality->value][$size->value];
+        $outputTokens = Arr::get($this->outputTokens[$quality->value], $size->value);
+        return (int) $outputTokens;
     }
 
     /**
@@ -61,9 +72,12 @@ final readonly class PricingService
      */
     public function reasoningRangeFor(GenerationQuality $quality): array
     {
+        $min = (int) Arr::get($this->reasoningTokens[$quality->value], 'min');
+        $max = (int) Arr::get($this->reasoningTokens[$quality->value],'max');
+
         return [
-            'min' => (int) $this->reasoningTokens[$quality->value]['min'],
-            'max' => (int) $this->reasoningTokens[$quality->value]['max'],
+            'min' => $min,
+            'max' => $max,
         ];
     }
 }
